@@ -7,6 +7,10 @@ import {
   actualizarVenta
 } from '../services/ventasService';
 
+import * as XLSX from 'xlsx';
+
+import { saveAs } from 'file-saver';
+
 export default function SalesTable() {
 
   // =========================
@@ -48,12 +52,70 @@ export default function SalesTable() {
 
 
   // =========================
+  // EXPORTAR EXCEL
+  // =========================
+
+  const exportarExcel = () => {
+
+    // Datos para excel
+    const datos = ventas.map((venta) => ({
+
+      Producto: venta.producto,
+      Categoria: venta.categoria,
+      Cantidad: venta.cantidad,
+      Precio: venta.precio,
+      Total: venta.total,
+      Fecha: venta.fecha,
+      MetodoPago: venta.metodoPago
+
+    }));
+
+    // Crear hoja
+    const worksheet = XLSX.utils.json_to_sheet(datos);
+
+    // Crear libro
+    const workbook = XLSX.utils.book_new();
+
+    // Agregar hoja
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      'Ventas'
+    );
+
+    // Generar archivo
+    const excelBuffer = XLSX.write(
+      workbook,
+      {
+        bookType: 'xlsx',
+        type: 'array'
+      }
+    );
+
+    // Crear blob
+    const data = new Blob(
+      [excelBuffer],
+      {
+        type:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+      }
+    );
+
+    // Descargar
+    saveAs(
+      data,
+      `ventas-moder3d.xlsx`
+    );
+
+  };
+
+
+  // =========================
   // AGREGAR VENTA
   // =========================
 
   const agregarVenta = async () => {
 
-    // Validación
     if (
       !producto ||
       !categoria ||
@@ -66,7 +128,6 @@ export default function SalesTable() {
 
     }
 
-    // Nueva venta
     const nuevaVenta = {
 
       producto,
@@ -79,13 +140,11 @@ export default function SalesTable() {
 
     };
 
-    // Guardar Firebase
     await guardarVenta(nuevaVenta);
 
-    // Recargar tabla
     cargarVentas();
 
-    // Limpiar formulario
+    // Limpiar
     setProducto('');
     setCategoria('');
     setCantidad('');
@@ -128,7 +187,7 @@ export default function SalesTable() {
 
 
   // =========================
-  // EDITAR MÉTODO PAGO
+  // EDITAR PAGO
   // =========================
 
   const cambiarMetodoPago = async (
@@ -146,13 +205,10 @@ export default function SalesTable() {
 
 
   // =========================
-  // ORDENAR TABLA
+  // ORDENAR
   // =========================
 
   const ordenarPor = (campo) => {
-
-    // Si clickea mismo campo
-    // invertimos orden
 
     if (sortBy === campo) {
 
@@ -173,18 +229,14 @@ export default function SalesTable() {
 
 
   // =========================
-  // VENTAS ORDENADAS
+  // ORDENAMIENTO TABLA
   // =========================
 
   const ventasOrdenadas = [...ventas].sort((a, b) => {
 
-    // Si no hay orden
     if (!sortBy) return 0;
 
-    // =====================
     // TEXTO
-    // =====================
-
     if (
       sortBy === 'producto' ||
       sortBy === 'categoria' ||
@@ -192,54 +244,34 @@ export default function SalesTable() {
     ) {
 
       const valorA = a[sortBy].toLowerCase();
+
       const valorB = b[sortBy].toLowerCase();
 
-      if (sortOrder === 'asc') {
+      return sortOrder === 'asc'
+        ? valorA.localeCompare(valorB)
+        : valorB.localeCompare(valorA);
 
-        return valorA.localeCompare(valorB);
-
-      } else {
-
-        return valorB.localeCompare(valorA);
-
-      }
     }
 
-    // =====================
-    // NÚMEROS
-    // =====================
-
+    // NUMEROS
     if (
       sortBy === 'precio' ||
       sortBy === 'total'
     ) {
 
-      if (sortOrder === 'asc') {
+      return sortOrder === 'asc'
+        ? a[sortBy] - b[sortBy]
+        : b[sortBy] - a[sortBy];
 
-        return a[sortBy] - b[sortBy];
-
-      } else {
-
-        return b[sortBy] - a[sortBy];
-
-      }
     }
 
-    // =====================
     // FECHAS
-    // =====================
-
     if (sortBy === 'fecha') {
 
-      if (sortOrder === 'asc') {
+      return sortOrder === 'asc'
+        ? new Date(a.fecha) - new Date(b.fecha)
+        : new Date(b.fecha) - new Date(a.fecha);
 
-        return new Date(a.fecha) - new Date(b.fecha);
-
-      } else {
-
-        return new Date(b.fecha) - new Date(a.fecha);
-
-      }
     }
 
     return 0;
@@ -248,7 +280,7 @@ export default function SalesTable() {
 
 
   // =========================
-  // TOTAL MENSUAL
+  // TOTAL
   // =========================
 
   const totalMensual = ventas.reduce(
@@ -265,19 +297,20 @@ export default function SalesTable() {
 
     <div className='bg-zinc-900 p-6 rounded-3xl'>
 
-      {/* TÍTULO */}
+      {/* HEADER */}
 
-      <h2 className='text-3xl font-bold mb-6'>
-        Gestión de Ventas
-      </h2>
+      <div className='flex flex-col md:flex-row justify-between items-center mb-6 gap-4'>
 
-      {/* ========================= */}
+        <h2 className='text-3xl font-bold'>
+          Gestión de Ventas
+        </h2>
+
+      </div>
+
+
       {/* FORMULARIO */}
-      {/* ========================= */}
 
       <div className='grid grid-cols-1 md:grid-cols-6 gap-4 mb-6'>
-
-        {/* PRODUCTO */}
 
         <input
           type='text'
@@ -289,8 +322,6 @@ export default function SalesTable() {
           className='bg-zinc-800 p-4 rounded-xl'
         />
 
-        {/* CATEGORÍA */}
-
         <input
           type='text'
           placeholder='Categoría'
@@ -300,8 +331,6 @@ export default function SalesTable() {
           }
           className='bg-zinc-800 p-4 rounded-xl'
         />
-
-        {/* CANTIDAD */}
 
         <input
           type='number'
@@ -313,8 +342,6 @@ export default function SalesTable() {
           className='bg-zinc-800 p-4 rounded-xl'
         />
 
-        {/* PRECIO */}
-
         <input
           type='number'
           placeholder='Precio'
@@ -325,8 +352,6 @@ export default function SalesTable() {
           className='bg-zinc-800 p-4 rounded-xl'
         />
 
-        {/* FECHA */}
-
         <input
           type='date'
           value={fecha}
@@ -335,8 +360,6 @@ export default function SalesTable() {
           }
           className='bg-zinc-800 p-4 rounded-xl'
         />
-
-        {/* MÉTODO PAGO */}
 
         <select
           value={metodoPago}
@@ -359,45 +382,35 @@ export default function SalesTable() {
       </div>
 
 
-      {/* ========================= */}
-      {/* BOTÓN */}
-      {/* ========================= */}
+      {/* BOTON AGREGAR */}
 
       <button
         onClick={agregarVenta}
-        className='bg-emerald-500 hover:bg-emerald-600 transition-all px-6 py-4 rounded-2xl font-bold mb-8'
+        className='bg-cyan-500 hover:bg-cyan-600 transition-all px-6 py-4 rounded-2xl font-bold mb-8'
       >
         Agregar Venta
       </button>
 
 
-      {/* ========================= */}
       {/* TABLA */}
-      {/* ========================= */}
 
       <div className='overflow-auto'>
 
         <table className='w-full'>
-
-          {/* CABECERA */}
 
           <thead>
 
             <tr className='border-b border-zinc-700'>
 
               <th
-                onClick={() =>
-                  ordenarPor('producto')
-                }
+                onClick={() => ordenarPor('producto')}
                 className='p-4 text-left cursor-pointer hover:text-emerald-400'
               >
                 Producto
               </th>
 
               <th
-                onClick={() =>
-                  ordenarPor('categoria')
-                }
+                onClick={() => ordenarPor('categoria')}
                 className='p-4 text-left cursor-pointer hover:text-emerald-400'
               >
                 Categoría
@@ -408,36 +421,28 @@ export default function SalesTable() {
               </th>
 
               <th
-                onClick={() =>
-                  ordenarPor('precio')
-                }
+                onClick={() => ordenarPor('precio')}
                 className='p-4 text-left cursor-pointer hover:text-emerald-400'
               >
                 Precio
               </th>
 
               <th
-                onClick={() =>
-                  ordenarPor('total')
-                }
+                onClick={() => ordenarPor('total')}
                 className='p-4 text-left cursor-pointer hover:text-emerald-400'
               >
                 Total
               </th>
 
               <th
-                onClick={() =>
-                  ordenarPor('fecha')
-                }
+                onClick={() => ordenarPor('fecha')}
                 className='p-4 text-left cursor-pointer hover:text-emerald-400'
               >
                 Fecha
               </th>
 
               <th
-                onClick={() =>
-                  ordenarPor('metodoPago')
-                }
+                onClick={() => ordenarPor('metodoPago')}
                 className='p-4 text-left cursor-pointer hover:text-emerald-400'
               >
                 Pago
@@ -452,8 +457,6 @@ export default function SalesTable() {
           </thead>
 
 
-          {/* CUERPO */}
-
           <tbody>
 
             {ventasOrdenadas.map((venta) => (
@@ -463,37 +466,27 @@ export default function SalesTable() {
                 className='border-b border-zinc-800'
               >
 
-                {/* PRODUCTO */}
-
                 <td className='p-4'>
                   {venta.producto}
                 </td>
-
-                {/* CATEGORÍA */}
 
                 <td className='p-4'>
                   {venta.categoria}
                 </td>
 
-                {/* CANTIDAD */}
-
                 <td className='p-4'>
                   {venta.cantidad}
                 </td>
-
-                {/* PRECIO */}
 
                 <td className='p-4'>
                   ${venta.precio}
                 </td>
 
-                {/* TOTAL */}
-
                 <td className='p-4 text-emerald-400 font-bold'>
                   ${venta.total}
                 </td>
 
-                {/* FECHA EDITABLE */}
+                {/* FECHA */}
 
                 <td className='p-4'>
 
@@ -511,7 +504,7 @@ export default function SalesTable() {
 
                 </td>
 
-                {/* MÉTODO PAGO */}
+                {/* METODO PAGO */}
 
                 <td className='p-4'>
 
@@ -564,9 +557,7 @@ export default function SalesTable() {
       </div>
 
 
-      {/* ========================= */}
       {/* TOTAL */}
-      {/* ========================= */}
 
       <div className='mt-8 text-right'>
 
@@ -577,9 +568,17 @@ export default function SalesTable() {
 
         </h2>
 
+                {/* BOTON EXCEL */}
+
+        <button
+          onClick={exportarExcel}
+          className='mt-8 text-left bg-emerald-500 hover:bg-emerald-600 transition-all px-6 py-3 rounded-2xl font-bold'
+        >
+          Exportar Excel
+        </button>
+
       </div>
 
     </div>
-
   );
 }
