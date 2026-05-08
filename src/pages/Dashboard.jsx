@@ -1,27 +1,44 @@
+import Navbar from '../components/Navbar';
+
 import DashboardCards from '../components/DashboardCards';
-import SalesChart from '../components/SalesChart';
+
 import SalesTable from '../components/SalesTable';
+
 
 export default function Dashboard() {
 
-    return (
+  return (
 
-    <div className='min-h-screen bg-zinc-950 text-white p-6'>
+    <div className='min-h-screen bg-zinc-950 text-white'>
 
-        <h1 className='text-4xl font-bold mb-8'>
-        Dashboard
-        </h1>
+
+      {/* NAVBAR */}
+
+      <Navbar />
+
+
+      {/* CONTENIDO */}
+
+      <div className='p-6'>
+
+
+        {/* CARDS */}
 
         <DashboardCards />
 
-        <div className='mt-10'>
-        <SalesChart />
+
+        {/* TABLA */}
+
+        <div className='mt-6'>
+
+          <SalesTable />
+
         </div>
 
-        <div className='mt-10'>
-        <SalesTable />
-        </div>
+      </div>
 
     </div>
-    );
+
+  );
+
 }
